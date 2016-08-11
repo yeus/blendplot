@@ -27,6 +27,7 @@ V3D = mathutils.Vector
 
 import time
 import bpy
+import blendplot
 
 activescene = None
 
@@ -193,8 +194,19 @@ def do_render_opengl():
     activescene.render.resolution_x=1024
     activescene.render.resolution_y=1024
     activescene.render.resolution_percentage=100
-    activescene.render.filepath = '/tmp/blendplot.png'
+    activescene.render.filepath = blendplot.tempfile
+
+    newworld = bpy.data.worlds.new("blendplot")
+    newworld.horizon_color=(1.0,1.0,1.0)
+    activescene.world=newworld
+
+    #activescene.color_mode = 'RGBA'
+    activescene.render.alpha_mode="TRANSPARENT"
+    
     bpy.ops.render.opengl(animation=False, write_still=True, view_context=False)
+    #bpy.ops.image.save_as(save_as_render=True, copy=True, 
+    #                      filepath=blendplot.tempfile, relative_path=True,
+    #                      show_multiview=False, use_multiview=False)
     bpy.ops.wm.quit_blender()
     #animation (boolean, (optional)) – Animation, Render files from the animation range of this scene
     #write_still (boolean, (optional)) – Write Image, Save rendered the image to the output path (used only when animation is disabled)
