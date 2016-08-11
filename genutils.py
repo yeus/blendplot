@@ -40,10 +40,18 @@ def copyobject(oldobjname):
     scene.objects.link(ob)                      # link the object into the scene
     return ob
 
-def genobject(objname,verts=[],faces=[],edges=[]):
+def genobject(objname,verts=[],faces=[],edges=[], mat=None):
     me = bpy.data.meshes.new(objname)  # create a new mesh
     me.from_pydata(verts,edges,faces)
     me.update()      # update the mesh with the new data
+    
+    # Assign material to mesh
+    if me.materials:
+        # assign to 1st material slot
+        me.materials[0] = mat
+    else:
+        # no slots
+        me.materials.append(mat)
     ob = bpy.data.objects.new(objname,me) # create a new object
     ob.data = me          # link the mesh data to the object
     scene = bpy.context.scene           # get the current scene
@@ -123,9 +131,10 @@ def createcone(r,h,res):
        verts.append([(0.0,0.0,0.0),(x,y,-h),(x2,y2,-h)])
     return verts
 
-def genobjandremovedoubles(verts):
+def genobjandremovedoubles(verts, mat):
     verts,faces=creategeometry(verts)
-    block=genobject("block",verts,faces)
+    block=genobject("block",verts,faces, mat=mat)
+    
     selectsingleobj(block)
     bpy.ops.object.editmode_toggle()
     bpy.ops.mesh.select_all(action='SELECT')
@@ -134,7 +143,7 @@ def genobjandremovedoubles(verts):
     return block 
 
 
-def arrow(pos, vec, width=0.1):
+def arrow(pos, vec, width=0.1, mat=None):
     # Generate the tracking quaternion that will account for the rotation
     vec = -V3D(vec)    
     quat=vec.to_track_quat("Z","X")
@@ -148,7 +157,7 @@ def arrow(pos, vec, width=0.1):
 
     #print(np.array(verts))
 
-    ar = genobjandremovedoubles(verts)   
+    ar = genobjandremovedoubles(verts, mat)   
     
         #obj2=cpobj("pfeil.schaft")
     ar.location=pos
@@ -157,11 +166,11 @@ def arrow(pos, vec, width=0.1):
     ar.rotation_quaternion=quat
     return ar
     
-def axis3d(size=1.0):
-    width = 0.03
-    a1 = arrow((1,0,0),(1.0,0.0,0.0),width = width) 
-    a2 = arrow((0,1,0),(0.0,1.0,0.0),width = width)
-    a3 = arrow((0,0,1),(0.0,0.0,1.0),width = width)
+def axis3d(mat,size=1.0):
+    width = 0.01
+    a1 = arrow((1,0,0),(1.0,0.0,0.0),width, mat) 
+    a2 = arrow((0,1,0),(0.0,1.0,0.0),width, mat)
+    a3 = arrow((0,0,1),(0.0,0.0,1.0),width, mat)
 
     return a1,a2,a3
 
@@ -203,7 +212,25 @@ def do_render_opengl():
     #activescene.color_mode = 'RGBA'
     activescene.render.alpha_mode="TRANSPARENT"
     
-    bpy.ops.render.opengl(animation=False, write_still=True, view_context=False)
+    
+    for area in bpy.context.screen.areas: # iterate through areas in current screen
+      #print(area.type)
+      if area.type == 'VIEW_3D':
+        for space in area.spaces: # iterate through spaces in current VIEW_3D area
+            #print(space.type)
+            if space.type == 'VIEW_3D': # check if space is a 3D view
+               print("changing from ",space.viewport_shade)
+               space.viewport_shade = 'MATERIAL' # set the viewport shading to rendered
+               space.region_3d.view_perspective = 'CAMERA'
+               
+    bpy.context.scene.update()
+    #py.ops.wm.redraw_timer(type='DRAW', iterations=1)
+    
+    #from time import sleep
+    #sleep(0.05)
+    
+    bpy.ops.render.opengl(animation=False, write_still=True, view_context=True)
+    #bpy.ops.render.opengl(animation=False, write_still=True, view_context=False)
     #bpy.ops.image.save_as(save_as_render=True, copy=True, 
     #                      filepath=blendplot.tempfile, relative_path=True,
     #                      show_multiview=False, use_multiview=False)
@@ -215,7 +242,10 @@ def do_render_opengl():
     
 #prepare blender and the scene
 preparescene()
-axis3d()
+mat = bpy.data.materials.new(name="black")
+mat.diffuse_color=(1.0,1.0,1.0)
+mat.use_shadeless=True
+axis3d(mat)
 addcamera(np.array((1.0,0.5,1.0))*2)
 do_render_opengl()
 
