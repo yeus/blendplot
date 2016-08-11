@@ -22,6 +22,8 @@ pi2=pi/2
 import time
 
 tempfile = '/tmp/blendplot.png'
+showimage=False
+showblender=True
 
 def main(args):
   try:
@@ -32,9 +34,10 @@ def main(args):
     #out = check_output(["blender", "-b","-P","genutils.py"])
     print(out)    
 
-    import Image
-    image = Image.open(tempfile)
-    image.show()
+    if showimage:
+        import Image
+        image = Image.open(tempfile)
+        image.show()
     #obj=arrow(Vector((1,1,1)),Vector((1,1,1)))
     #obj.select=True
 

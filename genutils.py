@@ -31,6 +31,8 @@ import blendplot
 
 activescene = None
 
+normalized = lambda x: x/np.sqrt(np.sum(x*x))
+
 def copyobject(oldobjname):
     me=bpy.data.objects[oldobjname].data
 
@@ -234,15 +236,50 @@ def do_render_opengl():
     #bpy.ops.image.save_as(save_as_render=True, copy=True, 
     #                      filepath=blendplot.tempfile, relative_path=True,
     #                      show_multiview=False, use_multiview=False)
-    bpy.ops.wm.quit_blender()
+    if not blendplot.showblender: bpy.ops.wm.quit_blender()
     #animation (boolean, (optional)) – Animation, Render files from the animation range of this scene
     #write_still (boolean, (optional)) – Write Image, Save rendered the image to the output path (used only when animation is disabled)
     #view_context (boolean, (optional)) – View Context, Use the current 3D view for rendering, else use scene settings.
 
+#return w,x,y,z
+def getquatrot(u,v):
+  k_cos_theta = np.dot(u,v);
+  u2 = np.sum(u*u)
+  v2 = np.sum(v*v)
+  k = sqrt(u2 * v2);
+
+  if (k_cos_theta / k == -1):
+    #180 degree rotation around any orthogonal vector
+    x,y,z = u/np.sqrt(u2)
+    return 0,x,y,z
+  
+  w = k_cos_theta + k
+  x,y,z = np.cross(u,v)
+  return normalized(np.array((w,x,y,z)))
     
 #prepare blender and the scene
 preparescene()
-mat = bpy.data.materials.new(name="black")
+
+
+mat = bpy.data.materials.new(name="red")
+mat.diffuse_color=(1.0,0.0,0.0)
+mat.use_shadeless=True
+
+targetpos=np.array([1.0,-.3,.9])
+ex = np.array((1.0,0.0,0.0))
+ey = np.array((0.0,1.0,0.0))
+ez = np.array((0.0,0.0,1.0))
+to = arrow(targetpos,(0.3,0.0,0.0),0.1, mat)
+
+w,x,y,z = getquatrot(-ez,targetpos)
+quat = mathutils.Quaternion([w,x,y,z])
+
+po = arrow((0,0,0),(1.0,0.0,0.0),0.1, mat)
+po.rotation_mode="QUATERNION"
+po.rotation_quaternion = quat
+
+
+mat = bpy.data.materials.new(name="white")
 mat.diffuse_color=(1.0,1.0,1.0)
 mat.use_shadeless=True
 axis3d(mat)
