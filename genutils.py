@@ -12,13 +12,21 @@
 
 """script loads an ods file into python arrays"""
 
+import sys
+import os
 import bpy
 import bpy.props
 from bpy.props import FloatVectorProperty
-import sys
-import os
 from itertools import chain
 import numpy as np
+
+#curfp=bpy.data.filepath
+#print(os.getcwd())
+from os.path import dirname
+#print(dirname(__file__))
+sys.path.append(dirname(__file__)) #add current directory to blender path
+print(np.array(sys.path))
+
 import mathutils
 from math import cos, sin, pi, atan,sqrt
 pi2=pi/2
@@ -26,11 +34,9 @@ pi2=pi/2
 V3D = mathutils.Vector
 
 import time
-import bpy
 import blendplot
 
 activescene = None
-
 normalized = lambda x: x/np.sqrt(np.sum(x*x))
 
 def copyobject(oldobjname):
@@ -246,7 +252,7 @@ def getquatrot(u,v):
   k_cos_theta = np.dot(u,v);
   u2 = np.sum(u*u)
   v2 = np.sum(v*v)
-  k = sqrt(u2 * v2);
+  k = sqrt(u2 * v2)
 
   if (k_cos_theta / k == -1):
     #180 degree rotation around any orthogonal vector
@@ -272,6 +278,7 @@ ez = np.array((0.0,0.0,1.0))
 to = arrow(targetpos,(0.3,0.0,0.0),0.1, mat)
 
 w,x,y,z = getquatrot(-ez,targetpos)
+print(w,x,y,z)
 quat = mathutils.Quaternion([w,x,y,z])
 
 po = arrow((0,0,0),(1.0,0.0,0.0),0.1, mat)
